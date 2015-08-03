@@ -81,10 +81,10 @@ in helper function
 
 ##OpenAM Setup
 
-1. I prefer using OpenAM realms. Set up a realm using a name that matches the one in the entry point URL of the `settings.json` file: `https://openam.idp.io/openam/SSORedirect/metaAlias/YOURREALM/idp`; we used `zimt` above.
+1. I prefer using OpenAM realms. Set up a realm using a name that matches the one in the entry point URL of the `settings.json` file: `https://openam.idp.io/openam/SSORedirect/metaAlias/<YOURREALM>/idp`; we used `zimt` above.
 2. Save the SP metadata (obtained in Step 5 above) in a file `sp-metadata.xml`.
 3. Logon OpenSSO console as `amadmin` and select _Common Tasks > Register Remote Service Provider_
-4. Select the corresponding real and upload the metadata.
+4. Select the corresponding real and upload the metadata. If all goes well the new SP shows up under _Federation > Entity Providers_ 
 
 
 

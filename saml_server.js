@@ -11,6 +11,7 @@ Accounts.registerLoginHandler(function(loginRequest) {
     return undefined;
   }
   var loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
+    console.log("RESULT :" + JSON.stringify(loginResult));
   if(loginResult && loginResult.profile && loginResult.profile.email){
     var user = Meteor.users.findOne({'emails.address':loginResult.profile.email});
 
@@ -23,6 +24,13 @@ Accounts.registerLoginHandler(function(loginRequest) {
       Meteor.users.update(user,
         {$push: {'services.resume.loginTokens': stampedToken}}
       );
+      
+      var samlLogin = {
+          idp: loginResult.profile.issuer,
+          nameID: loginResult.profile.nameID
+      };
+      
+      Meteor.users.update({_id: user._id}, {$set: {'services.saml': samlLogin}});
 
       //sending token along with the userId
       var result =  {

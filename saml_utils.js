@@ -305,6 +305,7 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
           profile.email = profile.nameID;
         }
 
+      console.log("NameID: " + JSON.stringify(profile));
 
       callback(null, profile, false);
     } else {
