@@ -14,7 +14,7 @@ For OpenAM, see the example app `example-openam`.
 ## Important Notes
 
 * **This package is working but may have issues with various saml providers** - it has only been tested and verified with [OpenIDP](https://openidp.feide.no/) and [OpenAM](https://www.forgerock.org/openam).
-* You will not be able to do SAML authentication when developing locally as the IDP can not return to a localhost URL.
+* Most SAML IDPs don't allow SPs with a _localhost (127.0.0.1)_  address. Unless you run your own IDP (eg via your own OpenAM instance) you might exprience issues.
 * The accounts-ui loggin buttons will not include saml providers, this may be implemented as a future enhancement, see below for how to build a custom login button.
 
 ## Usage
@@ -34,11 +34,13 @@ Put SAML settings in eg `settings.json` like so:
 ```
 
 in some template
+
 ```
 <a href="#" class="saml-login" data-provider="openam">OpenAM</a>
 ```
 
 in helper function
+
 ```
 'click .saml-login': function(event, template){
     event.preventDefault();
@@ -50,6 +52,21 @@ in helper function
     });
   }
 ```
+
+and if SingleLogout is needed
+
+```
+'click .saml-login': function(event, template){
+    event.preventDefault();
+    var provider = $(event.target).data('provider');
+    Meteor.logoutWithSaml({
+	    provider:provider
+	}, function(error, result){
+		//handle errors and result
+    });
+  }
+```
+
 ## Setup SAML SP (Consumer)
 
 1. Create a Meteor project by `meteor create sp` and cd into it.
@@ -89,16 +106,14 @@ in helper function
 
 
 ## OpenIDP setup
-EntryID = http://accounts-saml-example.meteor.com/
-Name of Service = meteor-accounts-saml-example
-AssertionConsumerService endpoint = http://accounts-saml-example.meteor.com/_saml/validate/openidp/
+- EntryID = http://accounts-saml-example.meteor.com
+- Name of Service = meteor-accounts-saml-example
+- AssertionConsumerService endpoint = http://accounts-saml-example.meteor.com/_saml/validate/openidp/
 
 ## TBD
-* better surfacing and display of errors
-* logout support
+* Introduction of IDP types (eg openam, auth0 etc) to support implementaion specific workarounds.
 
 ## Credits
-heavily derived from https://github.com/bergie/passport-saml
+Based Nat Strauser's Meteor/SAML package _natestrauser:meteor-accounts-saml_ which is
+heavily derived from https://github.com/bergie/passport-saml.
 
-## Donations
-BTC 14grxbGo7pNMNXubzXj9MDhM5fch21rYR5

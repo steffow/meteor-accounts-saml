@@ -30,6 +30,11 @@ Accounts.saml.initiateLogin = function(options, callback, dimensions) {
   }, 100);
 };
 
+Accounts.saml.idpInitiatedSLO = function(options){
+    //Meteor.absoluteUrl("_saml/logout/"+options.provider+"/"+options.credentialToken
+    console.log("Options: " + JSON.stringify(options));
+    location.href (Meteor.absoluteUrl("_saml/logout/"+options.provider));
+}
 
 var openCenteredPopup = function(url, width, height) {
   var screenX = typeof window.screenX !== 'undefined'
@@ -66,4 +71,10 @@ Meteor.loginWithSaml = function(options, callback) {
       userCallback: callback
     });
   });
+};
+
+Meteor.logoutWithSaml = function(options, callback) {
+  options = options || {};
+  Accounts.saml.idpInitiatedSLO(options, callback);
+  
 };
