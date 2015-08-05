@@ -69,6 +69,7 @@ SAML.prototype.signRequest = function (xml) {
   return signer.sign(this.options.privateKey, 'base64');
 }
 
+
 SAML.prototype.generateAuthorizeRequest = function (req) {
   var id = "_" + this.generateUniqueID();
   var instant = this.generateInstant();
@@ -107,18 +108,19 @@ SAML.prototype.generateLogoutRequest = function (req) {
   var id = "_" + this.generateUniqueID();
   var instant = this.generateInstant();
 
-  //samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-  // ID="_135ad2fd-b275-4428-b5d6-3ac3361c3a7f" Version="2.0" Destination="https://idphost/adfs/ls/"
-  //IssueInstant="2008-06-03T12:59:57Z"><saml:Issuer>myhost</saml:Issuer><NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
-  //NameQualifier="https://idphost/adfs/ls/">myemail@mydomain.com</NameID<samlp:SessionIndex>_0628125f-7f95-42cc-ad8e-fde86ae90bbe
-  //</samlp:SessionIndex></samlp:LogoutRequest>
-
+  if (Meteor.settings.debug) {  
+    console.log("Request" + JSON.stringify(req.socket));
+  }
   var request = "<samlp:LogoutRequest xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" "+
     "xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" ID=\""+id+"\" Version=\"2.0\" IssueInstant=\""+instant+
-    "\" Destination=\""+this.options.entryPoint + "\">" +
+    "\" Destination=\""+this.options.idpSLORedirectURL + "\">" +
     "<saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">" + this.options.issuer + "</saml:Issuer>"+
-    "<saml:NameID Format=\""+req.user.nameIDFormat+"\">"+req.user.nameID+"</saml:NameID>"+
+    "<saml:NameID Format=\""+this.options.identifierFormat+"\">"+Meteor.userId()+"</saml:NameID>"+
     "</samlp:LogoutRequest>";
+  if (Meteor.settings.debug) {
+    console.log("------- SAML Logout request -----------");  
+    console.log(request);
+  }
   return request;
 }
 

@@ -6,6 +6,17 @@ var Fiber = Npm.require('fibers');
 var connect = Npm.require('connect');
 RoutePolicy.declare('/_saml/', 'network');
 
+Meteor.methods({
+  samlLogout: function (text) {
+    // Make sure the user is logged in before inserting a task
+    if (! Meteor.userId()) {
+      throw new Meteor.Error("not-authorized");
+    } else {
+        console.log("Logout request from " + JSON.stringify(Meteor.userId()));   
+    }
+  }
+})
+
 Accounts.registerLoginHandler(function (loginRequest) {
     if (!loginRequest.saml || !loginRequest.credentialToken) {
         return undefined;
@@ -118,6 +129,22 @@ middleware = function (req, res, next) {
             });
             res.end();
             //closePopup(res);
+            break;
+        case "sloInit":
+            _saml = new SAML(service);
+            console.log("LOGOUT INITIATED");
+            var relayState = Meteor.absoluteUrl();
+            //debugger
+            _saml.getLogoutUrl(req, function (err, url) {
+                if (err)
+                    throw new Error("Unable to generate SAML logout request");
+                res.writeHead(302, {
+                    'Location': url
+                });
+                res.end();
+            });
+            break;
+        case "sloRedirect":
             break;
         case "authorize":
             service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider);

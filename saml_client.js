@@ -33,7 +33,8 @@ Accounts.saml.initiateLogin = function(options, callback, dimensions) {
 Accounts.saml.idpInitiatedSLO = function(options){
     //Meteor.absoluteUrl("_saml/logout/"+options.provider+"/"+options.credentialToken
     console.log("Options: " + JSON.stringify(options));
-    location.href (Meteor.absoluteUrl("_saml/logout/"+options.provider));
+    //location.href(Meteor.absoluteUrl("_saml/sloInit/"+options.provider));
+    window.open(Meteor.absoluteUrl("_saml/sloInit/"+options.provider));
 }
 
 var openCenteredPopup = function(url, width, height) {
@@ -75,6 +76,7 @@ Meteor.loginWithSaml = function(options, callback) {
 
 Meteor.logoutWithSaml = function(options, callback) {
   options = options || {};
-  Accounts.saml.idpInitiatedSLO(options, callback);
+  Accounts.saml.idpInitiatedSLO(options, callback); 
+    
   
 };

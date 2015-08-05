@@ -19,10 +19,10 @@ For OpenAM, see the example app `example-openam`.
 
 ## Usage
 
-Put SAML settings in eg `settings.json` like so:
+Put SAML settings in eg `server/lib/settings.js` like so:
 
 ```
-"saml":[{
+settings = {"saml":[{
     "provider":"openam",
     "entryPoint":"https://openam.idp.io/openam/SSORedirect/metaAlias/zimt/idp",
     "issuer": "https://sp.zimt.io/", //replace with url of your app
@@ -30,7 +30,9 @@ Put SAML settings in eg `settings.json` like so:
     
      "privateKeyFile": "certs/mykey.pem",  // path is relative to $METEOR-PROJECT/private
      "publicCertFile": "certs/mycert.pem"  // eg $METEOR-PROJECT/private/certs/mycert.pem
-  }]
+  }]}
+  
+Meteor.settings = settings;
 ```
 
 in some template
@@ -71,7 +73,7 @@ and if SingleLogout is needed
 
 1. Create a Meteor project by `meteor create sp` and cd into it.
 2. Add `steffo:meteor-accounts-saml`
-3. Create a `settings.json` file as described above
+3. Create `server/lib/settings.js` as described above. Since Meteor loads things in `server/lib` first, this ensures that your settings are respected even on Galaxy where you cannot use `meteor --settings`. 
 4. Put your private key and your cert (not the IDP's one) into the "private" directory. Eg if your meteor project is at `/Users/steffo/sp` then place them in `/Users/steffo/sp/private`
 5. Check if you can receive SP metadata eg via `curl http://localhost:3000/_saml/metadata/openam`. Output should look like:
 
@@ -101,7 +103,7 @@ and if SingleLogout is needed
 1. I prefer using OpenAM realms. Set up a realm using a name that matches the one in the entry point URL of the `settings.json` file: `https://openam.idp.io/openam/SSORedirect/metaAlias/<YOURREALM>/idp`; we used `zimt` above.
 2. Save the SP metadata (obtained in Step 5 above) in a file `sp-metadata.xml`.
 3. Logon OpenSSO console as `amadmin` and select _Common Tasks > Register Remote Service Provider_
-4. Select the corresponding real and upload the metadata. If all goes well the new SP shows up under _Federation > Entity Providers_ 
+4. Select the corresponding real and upload the metadata (alternatively, point OpenAM to the SP's metadata URL eg `http://sp.meteor.com/_saml/metadata/openam`). If all goes well the new SP shows up under _Federation > Entity Providers_ 
 
 
 
