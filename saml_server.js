@@ -7,14 +7,35 @@ var connect = Npm.require('connect');
 RoutePolicy.declare('/_saml/', 'network');
 
 Meteor.methods({
-  samlLogout: function (text) {
-    // Make sure the user is logged in before inserting a task
-    if (! Meteor.userId()) {
-      throw new Meteor.Error("not-authorized");
-    } else {
-        console.log("Logout request from " + JSON.stringify(Meteor.userId()));   
+    samlLogout: function (provider) {
+        // Make sure the user is logged in before initiate SAML SLO
+        if (!Meteor.userId()) {
+            throw new Meteor.Error("not-authorized");
+        } 
+        var samlProvider = function (element) {
+            return (element.provider == provider)
+        }
+        providerConfig = Meteor.settings.saml.filter(samlProvider)[0];
+        
+        if (Meteor.settings.debug) {  
+            console.log("Logout request from " + JSON.stringify(providerConfig));
+        }
+        // This query should respect upcoming array of SAML logins
+        nameID = Meteor.users.findOne({_id: Meteor.userId(), "services.saml.provider": provider}, {"services.saml":1}).services.saml.nameID;
+        if (Meteor.settings.debug) {  
+            console.log("NameID for user " + Meteor.userId() + " found: " + JSON.stringify(nameID));
+        }
+        
+        _saml = new SAML(providerConfig);
+        
+        request = _saml.generateLogoutRequest({nameID: nameID});
+        if (Meteor.settings.debug) {  
+            console.log("SAML Logout Request " + _saml.requestToUrl(request, "logout", function(){}));
+        }
+        
+
+        return "http://google.com";
     }
-  }
 })
 
 Accounts.registerLoginHandler(function (loginRequest) {
@@ -22,6 +43,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
         return undefined;
     }
     var loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
+    
     console.log("RESULT :" + JSON.stringify(loginResult));
     if (loginResult && loginResult.profile && loginResult.profile.email) {
         var user = Meteor.users.findOne({
@@ -41,6 +63,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
         });
 
         var samlLogin = {
+            provider: Accounts.saml.RelayState,
             idp: loginResult.profile.issuer,
             nameID: loginResult.profile.nameID
         };
@@ -49,6 +72,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
             _id: user._id
         }, {
             $set: {
+                // TBD this should be pushed, otherwise we're only able to SSO into a single IDP at a time
                 'services.saml': samlLogin
             }
         });
@@ -125,7 +149,7 @@ middleware = function (req, res, next) {
             console.log("Service: " + JSON.stringify(service));
             var relayState = Meteor.absoluteUrl(); // used to be redirected back from IDP to our Meteor app
             res.writeHead(302, {
-                'Location': service.logoutUrl + "&RelayState="+relayState
+                'Location': service.logoutUrl + "&RelayState=" + relayState
             });
             res.end();
             //closePopup(res);
@@ -158,9 +182,10 @@ middleware = function (req, res, next) {
                 });
                 res.end();
             });
-                break;
+            break;
         case "validate":
             _saml = new SAML(service);
+            Accounts.saml.RelayState = req.body.RelayState;
             _saml.validateResponse(req.body.SAMLResponse, req.body.RelayState, function (err, profile, loggedOut) {
                 if (err)
                     throw new Error("Unable to validate response url: " + err);
@@ -175,8 +200,9 @@ middleware = function (req, res, next) {
                 closePopup(res);
             });
             break;
-            default: throw new Error("Unexpected SAML action " + samlObject.actionName);
-                
+        default:
+            throw new Error("Unexpected SAML action " + samlObject.actionName);
+
         }
     } catch (err) {
         closePopup(res, err);
