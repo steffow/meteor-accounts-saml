@@ -28,12 +28,6 @@ Accounts.saml.initiateLogin = function (options, callback, dimensions) {
     }, 100);
 };
 
-Accounts.saml.idpInitiatedSLO = function (options) {
-    //Meteor.absoluteUrl("_saml/logout/"+options.provider+"/"+options.credentialToken
-    console.log("Options: " + JSON.stringify(options));
-    //location.href(Meteor.absoluteUrl("_saml/sloInit/"+options.provider));
-    window.open(Meteor.absoluteUrl("_saml/sloInit/" + options.provider));
-}
 
 var openCenteredPopup = function (url, width, height) {
     var screenX = typeof window.screenX !== 'undefined' ? window.screenX : window.screenLeft;
@@ -75,7 +69,9 @@ Meteor.logoutWithSaml = function (options, callback) {
     //Accounts.saml.idpInitiatedSLO(options, callback); 
     Meteor.call("samlLogout", options.provider, function (err, result) {
         console.log("LOC " + result);
-        window.location.replace(result);
+                // A nasty bounce: 'result' has the SAML LogoutRequest but we need a proper 302 to redirected from the server.
+        //window.location.replace(Meteor.absoluteUrl("_saml/sloRedirect/" + options.provider + "/?redirect="+result));
+        window.location.replace(Meteor.absoluteUrl("_saml/sloRedirect/" + options.provider + "/?redirect="+encodeURIComponent(result)));
     });
 
 

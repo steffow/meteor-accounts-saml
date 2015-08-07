@@ -11,30 +11,54 @@ Meteor.methods({
         // Make sure the user is logged in before initiate SAML SLO
         if (!Meteor.userId()) {
             throw new Meteor.Error("not-authorized");
-        } 
+        }
         var samlProvider = function (element) {
             return (element.provider == provider)
         }
         providerConfig = Meteor.settings.saml.filter(samlProvider)[0];
-        
-        if (Meteor.settings.debug) {  
+
+        if (Meteor.settings.debug) {
             console.log("Logout request from " + JSON.stringify(providerConfig));
         }
         // This query should respect upcoming array of SAML logins
-        nameID = Meteor.users.findOne({_id: Meteor.userId(), "services.saml.provider": provider}, {"services.saml":1}).services.saml.nameID;
-        if (Meteor.settings.debug) {  
+        var user = Meteor.users.findOne({
+            _id: Meteor.userId(),
+            "services.saml.provider": provider
+        }, {
+            "services.saml": 1
+        });
+        var nameID = user.services.saml.nameID;
+        var sessionIndex = nameID = user.services.saml.idpSession;
+        if (Meteor.settings.debug) {
             console.log("NameID for user " + Meteor.userId() + " found: " + JSON.stringify(nameID));
         }
-        
-        _saml = new SAML(providerConfig);
-        
-        request = _saml.generateLogoutRequest({nameID: nameID});
-        if (Meteor.settings.debug) {  
-            console.log("SAML Logout Request " + _saml.requestToUrl(request, "logout", function(){}));
-        }
-        
 
-        return "http://google.com";
+        _saml = new SAML(providerConfig);
+
+        var request = _saml.generateLogoutRequest({
+            nameID: nameID,
+            sessionIndex: sessionIndex
+        });
+
+        // request.request: actual XML SAML Request
+        // request.id: comminucation id which will be mentioned in the ResponseTo field of SAMLResponse
+
+        Meteor.users.update({
+            _id: Meteor.userId()
+        }, {
+            $set: {
+                'services.saml.inResponseTo': request.id
+            }
+        });
+
+        var _syncRequestToUrl = Meteor.wrapAsync(_saml.requestToUrl, _saml);
+        var result = _syncRequestToUrl(request.request, "logout");
+        if (Meteor.settings.debug) {
+            console.log("SAML Logout Request " + result);
+        }
+
+
+        return result;
     }
 })
 
@@ -43,7 +67,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
         return undefined;
     }
     var loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
-    
+
     console.log("RESULT :" + JSON.stringify(loginResult));
     if (loginResult && loginResult.profile && loginResult.profile.email) {
         var user = Meteor.users.findOne({
@@ -65,6 +89,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
         var samlLogin = {
             provider: Accounts.saml.RelayState,
             idp: loginResult.profile.issuer,
+            idpSession: loginResult.profile.sessionIndex,
             nameID: loginResult.profile.nameID
         };
 
@@ -119,7 +144,6 @@ middleware = function (req, res, next) {
     // the runner
     try {
         var samlObject = samlUrlToObject(req.url);
-        console.log("In middleware: ");
         if (!samlObject || !samlObject.serviceName) {
             next();
             return;
@@ -135,7 +159,6 @@ middleware = function (req, res, next) {
         // Skip everything if there's no service set by the saml middleware
         if (!service)
             throw new Error("Unexpected SAML service " + samlObject.serviceName);
-        console.log("ACTION: " + samlObject.actionName);
         switch (samlObject.actionName) {
         case "metadata":
             _saml = new SAML(service);
@@ -145,30 +168,59 @@ middleware = function (req, res, next) {
             closePopup(res);
             break;
         case "logout":
+            // This is where we receive SAML LogoutResponse
             _saml = new SAML(service);
-            console.log("Service: " + JSON.stringify(service));
-            var relayState = Meteor.absoluteUrl(); // used to be redirected back from IDP to our Meteor app
-            res.writeHead(302, {
-                'Location': service.logoutUrl + "&RelayState=" + relayState
-            });
-            res.end();
-            //closePopup(res);
-            break;
-        case "sloInit":
-            _saml = new SAML(service);
-            console.log("LOGOUT INITIATED");
-            var relayState = Meteor.absoluteUrl();
-            //debugger
-            _saml.getLogoutUrl(req, function (err, url) {
-                if (err)
-                    throw new Error("Unable to generate SAML logout request");
-                res.writeHead(302, {
-                    'Location': url
-                });
-                res.end();
-            });
+            _saml.validateLogoutResponse(req.query.SAMLResponse, function (err, result) {
+                if (!err) {
+                    console.log("Need to logout Meteor user " + result);
+
+                    var logOutUser = function (inResponseTo) {
+                        console.log("Logging Out user via inResponseTo " + inResponseTo);
+                        var loggedOutUser = Meteor.users.find({
+                            'services.saml.inResponseTo': inResponseTo
+                        }).fetch();
+                        if (loggedOutUser.length == 1) {
+                            console.log("Found user " + loggedOutUser[0]._id);
+                            Meteor.users.update({
+                                _id: loggedOutUser[0]._id
+                            }, {
+                                $set: {
+                                    "services.resume.loginTokens": []
+                                }
+                            });
+                            Meteor.users.update({
+                                _id: loggedOutUser[0]._id
+                            }, {
+                                $unset: {
+                                    "services.saml": ""
+                                }
+                            });
+                        } else {
+                            throw new Meteor.error("Found multiple users matching SAML inResponseTo fields");
+                        }
+                    }
+
+                    Fiber(function () {
+                        logOutUser(result);
+                    }).run();
+
+
+                    res.writeHead(302, {
+                        'Location': req.query.RelayState
+                    });
+                    res.end();
+                } else {
+                    // TBD thinking of sth meaning full.   
+                }
+            })
             break;
         case "sloRedirect":
+            var idpLogout = req.query.redirect
+            res.writeHead(302, {
+                // credentialToken here is the SAML LogOut Request that we'll send back to IDP
+                'Location': idpLogout
+            });
+            res.end();
             break;
         case "authorize":
             service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider);
@@ -193,7 +245,6 @@ middleware = function (req, res, next) {
                 var credentialToken = profile.inResponseToId || profile.InResponseTo || samlObject.credentialToken;
                 if (!credentialToken)
                     throw new Error("Unable to determine credentialToken");
-                console.log("Checking CT: " + credentialToken);
                 Accounts.saml._loginResultForCredentialToken[credentialToken] = {
                     profile: profile
                 };

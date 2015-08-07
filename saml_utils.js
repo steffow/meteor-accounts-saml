@@ -107,6 +107,7 @@ SAML.prototype.generateAuthorizeRequest = function (req) {
 SAML.prototype.generateLogoutRequest = function (options) {
     // options should be of the form
     // nameId: <nameId as submitted during SAML SSO>
+    // sessionIndex: sessionIndex
     // --- NO SAMLsettings: <Meteor.setting.saml  entry for the provider you want to SLO from   
 
     var id = "_" + this.generateUniqueID();
@@ -118,51 +119,83 @@ SAML.prototype.generateLogoutRequest = function (options) {
         "<saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">" + this.options.issuer + "</saml:Issuer>" +
         "<saml:NameID Format=\"" + this.options.identifierFormat + "\">" + options.nameID + "</saml:NameID>" +
         "</samlp:LogoutRequest>";
+
+    request = "<samlp:LogoutRequest xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\"  " +
+        "ID=\"" + id + "\" " +
+        "Version=\"2.0\" " +
+        "IssueInstant=\"" + instant + "\" " +
+        "Destination=\"" + this.options.idpSLORedirectURL + "\" " +
+        ">" +
+        "<saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">" + this.options.issuer + "</saml:Issuer>" +
+        "<saml:NameID xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
+        "NameQualifier=\"http://id.init8.net:8080/openam\" " +
+        "SPNameQualifier=\"" + this.options.issuer + "\" " +
+        "Format=\"" + this.options.identifierFormat + "\">" +
+        options.nameID + "</saml:NameID>" +
+        "<samlp:SessionIndex xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">" + options.sessionIndex + "</samlp:SessionIndex>" +
+        "</samlp:LogoutRequest>";
     if (Meteor.settings.debug) {
         console.log("------- SAML Logout request -----------");
         console.log(request);
     }
-    return request;
+    return {request: request, id: id};
 }
 
 SAML.prototype.requestToUrl = function (request, operation, callback) {
     var self = this;
+    var result;
     zlib.deflateRaw(request, function (err, buffer) {
-            if (err) {
-                return callback(err);
-            }
-
-            var base64 = buffer.toString('base64');
-            var target = self.options.entryPoint;
-
-            if (operation === 'logout') {
-                if (self.options.logoutUrl) {
-                    target = self.options.logoutUrl;
-                }
-            }
-
-            if (target.indexOf('?') > 0)
-                target += '&';
-            else
-                target += '?';
-
-            var samlRequest = {
-                SAMLRequest: base64
-            };
-
-            if (self.options.privateCert) {
-                samlRequest.SigAlg = 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
-                samlRequest.Signature = self.signRequest(querystring.stringify(samlRequest));
-            }
-
-            // TBD. We should really include a proper RelayState here 
-            target += querystring.stringify(samlRequest) + "&RelayState=" + self.options.provider;
-
-            if (Meteor.settings.debug) {
-                console.log("requestToUrl: " + target);
+        if (err) {
+            return callback(err);
         }
-        callback(null, target);
+
+        var base64 = buffer.toString('base64');
+        var target = self.options.entryPoint;
+
+        if (operation === 'logout') {
+            if (self.options.logoutUrl) {
+                target = self.options.logoutUrl;
+            }
+        }
+
+        if (target.indexOf('?') > 0)
+            target += '&';
+        else
+            target += '?';
+
+        var samlRequest = {
+            SAMLRequest: base64
+        };
+
+        if (self.options.privateCert) {
+            samlRequest.SigAlg = 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+            samlRequest.Signature = self.signRequest(querystring.stringify(samlRequest));
+        }
+
+        // TBD. We should really include a proper RelayState here 
+        if (operation === 'logout') {
+            // in case of logout we want to be redirected back to the Meteor app.
+            var relayState = Meteor.absoluteUrl();
+        } else {
+            var relayState = self.options.provider;
+        }
+        target += querystring.stringify(samlRequest) + "&RelayState=" + relayState;
+
+        if (Meteor.settings.debug) {
+            console.log("requestToUrl: " + target);
+        }
+        if (operation === 'logout') {
+            // in case of logout we want to be redirected back to the Meteor app.
+            //console.log("RETURNING TARGET:  " + target);
+            result = target;
+            return callback(null, target);
+
+        } else {
+            console.log("CALLBACK:  " + callback);
+            callback(null, target);
+        }
     });
+    //console.log("RETURNING TARGET:  " + result);
 }
 
 SAML.prototype.getAuthorizeUrl = function (req, callback) {
@@ -231,11 +264,53 @@ SAML.prototype.getElement = function (parentElement, elementName) {
     return parentElement[elementName];
 }
 
+SAML.prototype.validateLogoutResponse = function (samlResponse, callback) {
+    var self = this;
+
+    var compressedSAMLResponse = new Buffer(samlResponse, 'base64');
+    zlib.inflateRaw(compressedSAMLResponse, function (err, decoded) {
+
+        if (err) {
+            console.log(err)
+        } else {
+            var parser = new xml2js.Parser({
+                explicitRoot: true
+            });
+            parser.parseString(decoded, function (err, doc) {
+                var response = self.getElement(doc, 'LogoutResponse');
+
+                if (response) {
+                    // TBD. Check if this msg corresponds to one we sent
+                    var inResponseTo = response['$'].InResponseTo;
+                    console.log("In Response to: " + inResponseTo);
+                    var status = self.getElement(response, 'Status');
+                    var statusCode = self.getElement(status[0], 'StatusCode')[0]['$'].Value;
+                    console.log("StatusCode: " + JSON.stringify(statusCode));
+                    if (statusCode === 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+                        // In case of a successful logout at IDP we return inResponseTo value.
+                        // This is the only way how we can identify the Meteor user (as we don't use Session Cookies)
+                        callback(null, inResponseTo);
+                    } else {
+                        callback("Error. Logout not confirmed by IDP", null);
+                    }
+                } else {
+                    callback("No Response Found", null);
+                }
+            })
+        }
+
+    })
+
+
+
+
+}
+
 SAML.prototype.validateResponse = function (samlResponse, relayState, callback) {
     var self = this;
     var xml = new Buffer(samlResponse, 'base64').toString('ascii');
     // We currently use RelayState to save SAML provider
-    console.log("Validating response with relay state: " + relayState);
+    console.log("Validating response with relay state: " + xml);
     var parser = new xml2js.Parser({
         explicitRoot: true
     });
@@ -285,6 +360,22 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
                         profile.nameIDFormat = nameID[0]['$'].Format;
                     }
                 }
+            }
+
+            var authnStatement = self.getElement(assertion[0], 'AuthnStatement');
+
+            if (authnStatement) {
+                if (authnStatement[0]['$'].SessionIndex) {
+
+                    profile.sessionIndex = authnStatement[0]['$'].SessionIndex;
+                    console.log("Session Index: " + profile.sessionIndex);
+                } else {
+                    console.log("No Session Index Found");
+                }
+
+
+            } else {
+                console.log("No AuthN Statement found");
             }
 
             var attributeStatement = self.getElement(assertion[0], 'AttributeStatement');
@@ -396,6 +487,11 @@ SAML.prototype.generateServiceProviderMetadata = function (callbackUrl) {
             '@entityID': this.options.issuer,
             'SPSSODescriptor': {
                 '@protocolSupportEnumeration': 'urn:oasis:names:tc:SAML:2.0:protocol',
+                'SingleLogoutService': {
+                    '@Binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+                    '@Location': this.options.sloConsumerUrl,
+                    '@ResponseLocation': this.options.sloConsumerUrl
+                },
                 'KeyDescriptor': keyDescriptor,
                 'NameIDFormat': this.options.identifierFormat,
                 'AssertionConsumerService': {
