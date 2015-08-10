@@ -67,8 +67,9 @@ Accounts.registerLoginHandler(function (loginRequest) {
         return undefined;
     }
     var loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
-
+    if (Meteor.settings.debug) {
     console.log("RESULT :" + JSON.stringify(loginResult));
+    }
     if (loginResult && loginResult.profile && loginResult.profile.email) {
         var user = Meteor.users.findOne({
             'emails.address': loginResult.profile.email
@@ -172,15 +173,17 @@ middleware = function (req, res, next) {
             _saml = new SAML(service);
             _saml.validateLogoutResponse(req.query.SAMLResponse, function (err, result) {
                 if (!err) {
-                    console.log("Need to logout Meteor user " + result);
-
                     var logOutUser = function (inResponseTo) {
+                        if (Meteor.settings.debug) {
                         console.log("Logging Out user via inResponseTo " + inResponseTo);
+                        }
                         var loggedOutUser = Meteor.users.find({
                             'services.saml.inResponseTo': inResponseTo
                         }).fetch();
                         if (loggedOutUser.length == 1) {
+                            if (Meteor.settings.debug) {
                             console.log("Found user " + loggedOutUser[0]._id);
+                            }
                             Meteor.users.update({
                                 _id: loggedOutUser[0]._id
                             }, {
@@ -277,8 +280,9 @@ var samlUrlToObject = function (url) {
         serviceName: splitPath[3],
         credentialToken: splitPath[4]
     };
-
+    if (Meteor.settings.debug) {
     console.log(result);
+    }
     return result;
 };
 

@@ -138,7 +138,10 @@ SAML.prototype.generateLogoutRequest = function (options) {
         console.log("------- SAML Logout request -----------");
         console.log(request);
     }
-    return {request: request, id: id};
+    return {
+        request: request,
+        id: id
+    };
 }
 
 SAML.prototype.requestToUrl = function (request, operation, callback) {
@@ -186,16 +189,13 @@ SAML.prototype.requestToUrl = function (request, operation, callback) {
         }
         if (operation === 'logout') {
             // in case of logout we want to be redirected back to the Meteor app.
-            //console.log("RETURNING TARGET:  " + target);
             result = target;
             return callback(null, target);
 
         } else {
-            console.log("CALLBACK:  " + callback);
             callback(null, target);
         }
     });
-    //console.log("RETURNING TARGET:  " + result);
 }
 
 SAML.prototype.getAuthorizeUrl = function (req, callback) {
@@ -271,7 +271,9 @@ SAML.prototype.validateLogoutResponse = function (samlResponse, callback) {
     zlib.inflateRaw(compressedSAMLResponse, function (err, decoded) {
 
         if (err) {
-            console.log(err)
+            if (Meteor.settings.debug) {
+                console.log(err)
+            }
         } else {
             var parser = new xml2js.Parser({
                 explicitRoot: true
@@ -282,10 +284,14 @@ SAML.prototype.validateLogoutResponse = function (samlResponse, callback) {
                 if (response) {
                     // TBD. Check if this msg corresponds to one we sent
                     var inResponseTo = response['$'].InResponseTo;
-                    console.log("In Response to: " + inResponseTo);
+                    if (Meteor.settings.debug) {
+                        console.log("In Response to: " + inResponseTo);
+                    }
                     var status = self.getElement(response, 'Status');
                     var statusCode = self.getElement(status[0], 'StatusCode')[0]['$'].Value;
-                    console.log("StatusCode: " + JSON.stringify(statusCode));
+                    if (Meteor.settings.debug) {
+                        console.log("StatusCode: " + JSON.stringify(statusCode));
+                    }
                     if (statusCode === 'urn:oasis:names:tc:SAML:2.0:status:Success') {
                         // In case of a successful logout at IDP we return inResponseTo value.
                         // This is the only way how we can identify the Meteor user (as we don't use Session Cookies)
@@ -310,28 +316,31 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
     var self = this;
     var xml = new Buffer(samlResponse, 'base64').toString('ascii');
     // We currently use RelayState to save SAML provider
-    console.log("Validating response with relay state: " + xml);
+    if (Meteor.settings.debug) {
+        console.log("Validating response with relay state: " + xml);
+    }
     var parser = new xml2js.Parser({
         explicitRoot: true
     });
 
-    var p = new xml2js.Parser({
-        explicitRoot: true
-    });
-    p.parseString(xml, function (err, result) {
-        console.log(result);
-    });
-
     parser.parseString(xml, function (err, doc) {
         // Verify signature
-        console.log("Verify signature");
+        if (Meteor.settings.debug) {
+            console.log("Verify signature");
+        }
         if (self.options.cert && !self.validateSignature(xml, self.options.cert)) {
-            console.log("Signature WRONG");
+            if (Meteor.settings.debug) {
+                console.log("Signature WRONG");
+            }
             return callback(new Error('Invalid signature'), null, false);
         }
-        console.log("Signature OK");
+        if (Meteor.settings.debug) {
+            console.log("Signature OK");
+        }
         var response = self.getElement(doc, 'Response');
-        console.log("Got response");
+        if (Meteor.settings.debug) {
+            console.log("Got response");
+        }
         if (response) {
             var assertion = self.getElement(response, 'Assertion');
             if (!assertion) {
@@ -368,14 +377,20 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
                 if (authnStatement[0]['$'].SessionIndex) {
 
                     profile.sessionIndex = authnStatement[0]['$'].SessionIndex;
-                    console.log("Session Index: " + profile.sessionIndex);
+                    if (Meteor.settings.debug) {
+                        console.log("Session Index: " + profile.sessionIndex);
+                    }
                 } else {
-                    console.log("No Session Index Found");
+                    if (Meteor.settings.debug) {
+                        console.log("No Session Index Found");
+                    }
                 }
 
 
             } else {
-                console.log("No AuthN Statement found");
+                if (Meteor.settings.debug) {
+                    console.log("No AuthN Statement found");
+                }
             }
 
             var attributeStatement = self.getElement(assertion[0], 'AttributeStatement');
@@ -406,8 +421,9 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
             if (!profile.email && profile.nameID && profile.nameIDFormat && profile.nameIDFormat.indexOf('emailAddress') >= 0) {
                 profile.email = profile.nameID;
             }
-
-            console.log("NameID: " + JSON.stringify(profile));
+            if (Meteor.settings.debug) {
+                console.log("NameID: " + JSON.stringify(profile));
+            }
 
             callback(null, profile, false);
         } else {
