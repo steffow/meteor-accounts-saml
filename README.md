@@ -27,7 +27,7 @@ settings = {"saml":[{
     "entryPoint":"https://openam.idp.io/openam/SSORedirect/metaAlias/zimt/idp",
     "issuer": "https://sp.zimt.io/", //replace with url of your app
     "cert":"MIICizCCAfQCCQCY8tKaMc0 LOTS OF FUNNY CHARS ==",
-    
+    "idpSLORedirectURL": "http://openam.idp.io/openam/IDPSloRedirect/metaAlias/zimt/idp",
      "privateKeyFile": "certs/mykey.pem",  // path is relative to $METEOR-PROJECT/private
      "publicCertFile": "certs/mycert.pem"  // eg $METEOR-PROJECT/private/certs/mycert.pem
   }]}
@@ -114,6 +114,8 @@ and if SingleLogout is needed
 
 ## TBD
 * Introduction of IDP types (eg openam, auth0 etc) to support implementaion specific workarounds.
+* Support for different SAML Bindings
+* Check for better/alternative SAML profile. I have the impression that the SAML Web Browser SSO profile somewhat conflicts with Meteor's DDP/websocket approach. Eg when the browser issues an HTTP request, Meteor apps don't necessarily know from which user/session this request comes from (ja, we could use cookies but that's not the the Meteor-way).
 
 ## Credits
 Based Nat Strauser's Meteor/SAML package _natestrauser:meteor-accounts-saml_ which is
