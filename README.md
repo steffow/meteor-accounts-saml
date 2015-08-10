@@ -112,7 +112,7 @@ and if SingleLogout is needed
 - Name of Service = meteor-accounts-saml-example
 - AssertionConsumerService endpoint = http://accounts-saml-example.meteor.com/_saml/validate/openidp/
 
-## TBD
+## Roadmap
 * Introduction of IDP types (eg openam, auth0 etc) to support implementaion specific workarounds.
 * Support for different SAML Bindings
 * Check for better/alternative SAML profile. I have the impression that the SAML Web Browser SSO profile somewhat conflicts with Meteor's DDP/websocket approach. Eg when the browser issues an HTTP request, Meteor apps don't necessarily know from which user/session this request comes from (ja, we could use cookies but that's not the the Meteor-way).
