@@ -1,7 +1,158 @@
 <head>
-  <title>Simple SAML Login with OpenAM</title>
-</head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    background-color: white;
+    margin: 10px 13px 10px 13px;
+}
+table {
+	margin: 10px 0 15px 0;
+	border-collapse: collapse;
+}
+td,th {	
+	border: 1px solid #ddd;
+	padding: 3px 10px;
+}
+th {
+	padding: 5px 10px;	
+}
 
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #ccc;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px solid #d9d9d9;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fff;
+    color:#737373;
+    font-size: 11px;
+    padding: 0;
+}
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:10px auto;
+    }
+}
+@media print {
+	body,code,pre code,h1,h2,h3,h4,h5,h6 {
+		color: black;
+	}
+	table, pre {
+		page-break-inside: avoid;
+	}
+}
+</style>
+<title>Examples for _steffo:meteor-accounts-saml_</title>
+
+</head>
 <body>
 	{{>samlDemo}}
 </body>
@@ -27,20 +178,38 @@
     
    <a href="#" class="meteor-logout">Logout (Meteor)</a>
 	{{/if}}
-	<h2>Step 1</h2>
-	Create a password based account.
-	
-	<h2>Step 2</h2>
-	Sign out / log out.  You should see both the login buttons control 'Sign In' and the custom saml login link 'Log in with OpenIDP'
-	
-	<h2>Step 3</h2>
-	Create OpenIDP account if you don't already have one with same email address as the password account. https://openidp.feide.no/
+<h1>Examples for <em>steffo:meteor-accounts-saml</em></h1>
 
-	<h2>Step 4</h2>
-	Click the link 'Log in with OpenIDP'. In the pop up window, log in with your OpenIDP credentials.
+<p>There are currently two SAML IDPs supported by the examples.</p>
 
-	<h2>Step 5</h2>
-	If all goes well, the popup should close by itself.  You should now be logged in just as if you had typed in your username and password.
+<ul>
+<li>ForgeRock's OpenAM (open-source, can be run locally)</li>
+<li>Feide's OpenIDP (run as a service, free to register)</li>
+</ul>
 
+
+<h3>Step 1. Create a Meteor project</h3>
+
+<p>First clone the GitHub project in your local filesystem. From your command line run</p>
+
+<pre><code>$ meteor create openam
+$ cd openam
+</code></pre>
+
+<p>After that, run</p>
+
+<pre><code>$ cp -rp meteor-accounts-saml/openam-example/* .
+$ meteor add accounts-password
+$ meteor add accounts-ui
+$ meteor add steffo:meteor-accounts-saml
+</code></pre>
+
+<p>Make sure that you add/change the user in <code>server/config.js</code> and that <code>initialBoot = true</code>in the same file. This will create a local Meteor user.</p>
+
+<h3>Step 2. Make sure that IDP and SP know each other</h3>
+
+<p>The IDP configuration is reflected in the file <code>server/lib/settings.js</code>. Basically we only need to know the Login URL (<code>entryPoint</code>) and IDP's cert. Optionally, we can use the Single Logout URL.</p>
+
+<p>The SP configuration can be obtained by accessing eg <code>http://localhost:3000/_saml/metadata/forgerock</code> provided you have a SAML provider name <code>forgerock</code>in your <code>settings.js</code>. In OpenAM, you can create an SP configuration simply by pointing OpenAM to that Metadata URL.</p>
 
 </template>
