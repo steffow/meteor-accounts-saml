@@ -9,7 +9,7 @@ SAML v2 login support for existing password based accounts
 
 For OpenIDP, see the example app `example-openidp` and http://accounts-saml-example.meteor.com/ for a demo.
 
-For OpenAM, see the example app `example-openam`.
+For OpenAM, see the example app `openam-example`.
 
 ## Important Notes
 
