@@ -166,7 +166,8 @@ middleware = function (req, res, next) {
             service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider);
             res.writeHead(200);
             res.write(_saml.generateServiceProviderMetadata(service.callbackUrl));
-            closePopup(res);
+            res.end();
+            //closePopup(res);
             break;
         case "logout":
             // This is where we receive SAML LogoutResponse

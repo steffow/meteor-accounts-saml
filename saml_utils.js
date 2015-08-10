@@ -156,8 +156,8 @@ SAML.prototype.requestToUrl = function (request, operation, callback) {
         var target = self.options.entryPoint;
 
         if (operation === 'logout') {
-            if (self.options.logoutUrl) {
-                target = self.options.logoutUrl;
+            if (self.options.idpSLORedirectURL) {
+                target = self.options.idpSLORedirectURL;
             }
         }
 
@@ -442,15 +442,13 @@ SAML.prototype.validateResponse = function (samlResponse, relayState, callback) 
 };
 
 
-//SAML.prototype(generateServiceProviderMetadata(options.privateCert)
 SAML.prototype.generateServiceProviderMetadata = function (callbackUrl) {
 
     var keyDescriptor = null;
 
     if (!decryptionCert) {
         decryptionCert = this.options.privateCert;
-    }
-
+    }  
 
     if (this.options.privateKey) {
         if (!decryptionCert) {
@@ -503,12 +501,12 @@ SAML.prototype.generateServiceProviderMetadata = function (callbackUrl) {
             '@entityID': this.options.issuer,
             'SPSSODescriptor': {
                 '@protocolSupportEnumeration': 'urn:oasis:names:tc:SAML:2.0:protocol',
+                'KeyDescriptor': keyDescriptor,
                 'SingleLogoutService': {
                     '@Binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                    '@Location': this.options.sloConsumerUrl,
-                    '@ResponseLocation': this.options.sloConsumerUrl
+                    '@Location': Meteor.absoluteUrl() + "_saml/logout/" + this.options.provider + "/",
+                    '@ResponseLocation': Meteor.absoluteUrl() + "_saml/logout/" + this.options.provider + "/"
                 },
-                'KeyDescriptor': keyDescriptor,
                 'NameIDFormat': this.options.identifierFormat,
                 'AssertionConsumerService': {
                     '@index': '1',
