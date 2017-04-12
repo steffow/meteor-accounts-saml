@@ -45,7 +45,7 @@ routepolicy@1.0.12
 service-configuration@1.0.11
 spacebars@1.0.12
 spacebars-compiler@1.0.12
-steffo:meteor-accounts-saml@0.0.3
+steffo:meteor-accounts-saml@0.0.6
 tracker@1.1.2
 ui@1.0.11
 underscore@1.0.10
