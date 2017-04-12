@@ -3,7 +3,8 @@ if (!Accounts.saml) {
 }
 
 var Fiber = Npm.require('fibers');
-var connect = Npm.require('connect');
+//var connect = Npm.require('connect');
+var bodyParser = Npm.require('body-parser')
 RoutePolicy.declare('/_saml/', 'network');
 
 Meteor.methods({
@@ -132,7 +133,7 @@ Accounts.saml.retrieveCredential = function (credentialToken) {
 
 
 // Listen to incoming SAML http requests
-WebApp.connectHandlers.use(connect.bodyParser()).use(function (req, res, next) {
+WebApp.connectHandlers.use(bodyParser.urlencoded({ extended: true })).use(function (req, res, next) {
     // Need to create a Fiber since we're using synchronous http calls and nothing
     // else is wrapping this in a fiber automatically
     Fiber(function () {
