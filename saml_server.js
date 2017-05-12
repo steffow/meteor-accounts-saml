@@ -72,12 +72,30 @@ Accounts.registerLoginHandler(function (loginRequest) {
     console.log("RESULT :" + JSON.stringify(loginResult));
     }
     if (loginResult && loginResult.profile && loginResult.profile.email) {
+        console.log("Profile: " + JSON.stringify(loginResult.profile.email));
         var user = Meteor.users.findOne({
             'emails.address': loginResult.profile.email
         });
 
-        if (!user)
+        if (!user) {
+          if (Meteor.settings.saml[0].dynamicProfile) {
+            Accounts.createUser({
+                email: loginResult.profile.email,
+                password: "",
+                username: loginResult.profile.nameID,
+                profile: ""
+            });
+            user = Meteor.users.findOne({
+                "emails.address": loginResult.profile.email
+            });
+            if (Meteor.settings.debug) {
+               console.log("Created new user");
+            }
+          } else {
             throw new Error("Could not find an existing user with supplied email " + loginResult.profile.email);
+          }
+        }
+
 
 
         //creating the token and adding to the user
@@ -215,7 +233,7 @@ middleware = function (req, res, next) {
                     });
                     res.end();
                 } else {
-                    // TBD thinking of sth meaning full.   
+                    // TBD thinking of sth meaning full.
                 }
             })
             break;
