@@ -1,6 +1,8 @@
 /* globals SAML:true */
 'use strict';
 
+/* globals SAML:true */
+
 const zlib = Npm.require('zlib');
 const xml2js = Npm.require('xml2js');
 const xmlCrypto = Npm.require('xml-crypto');
@@ -430,87 +432,6 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
 	});
 };
 
-<<<<<<< HEAD
-SAML.prototype.generateServiceProviderMetadata = function (callbackUrl) {
-
-    if (!decryptionCert) {
-        decryptionCert = this.options.privateCert;
-    }  
-
-    if (!this.options.callbackUrl && !callbackUrl) {
-        throw new Error(
-            "Unable to generate service provider metadata when callbackUrl option is not set");
-    }
-
-    var metadata = {
-        'EntityDescriptor': {
-            '@xmlns': 'urn:oasis:names:tc:SAML:2.0:metadata',
-            '@xmlns:ds': 'http://www.w3.org/2000/09/xmldsig#',
-            '@entityID': this.options.issuer,
-            'SPSSODescriptor': {
-                '@protocolSupportEnumeration': 'urn:oasis:names:tc:SAML:2.0:protocol',
-                'SingleLogoutService': {
-                    '@Binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                    '@Location': Meteor.absoluteUrl() + "_saml/logout/" + this.options.provider + "/",
-                    '@ResponseLocation': Meteor.absoluteUrl() + "_saml/logout/" + this.options.provider + "/"
-                },
-                'NameIDFormat': this.options.identifierFormat,
-                'AssertionConsumerService': {
-                    '@index': '1',
-                    '@isDefault': 'true',
-                    '@Binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-                    '@Location': callbackUrl
-                }
-            },
-        }
-    };
-
-    if (this.options.privateKey) {
-        if (!decryptionCert) {
-            throw new Error(
-                "Missing decryptionCert while generating metadata for decrypting service provider");
-        }
-
-        decryptionCert = decryptionCert.replace(/-+BEGIN CERTIFICATE-+\r?\n?/, '');
-        decryptionCert = decryptionCert.replace(/-+END CERTIFICATE-+\r?\n?/, '');
-        decryptionCert = decryptionCert.replace(/\r\n/g, '\n');
-
-        metadata['EntityDescriptor']['SPSSODescriptor']['KeyDescriptor'] = {
-            'ds:KeyInfo': {
-                'ds:X509Data': {
-                    'ds:X509Certificate': {
-                        '#text': decryptionCert
-                    }
-                }
-            },
-            '#list': [
-        // this should be the set that the xmlenc library supports
-                {
-                    'EncryptionMethod': {
-                        '@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes256-cbc'
-                    }
-                },
-                {
-                    'EncryptionMethod': {
-                        '@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes128-cbc'
-                    }
-                },
-                {
-                    'EncryptionMethod': {
-                        '@Algorithm': 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'
-                    }
-                },
-      ]
-        };
-    }
-
-
-    return xmlbuilder.create(metadata).end({
-        pretty: true,
-        indent: '  ',
-        newline: '\n'
-    });
-=======
 let decryptionCert;
 SAML.prototype.generateServiceProviderMetadata = function(callbackUrl) {
 
@@ -590,5 +511,4 @@ SAML.prototype.generateServiceProviderMetadata = function(callbackUrl) {
 		indent: '  ',
 		newline: '\n'
 	});
->>>>>>> develop
 };
