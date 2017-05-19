@@ -71,28 +71,61 @@ Accounts.registerLoginHandler(function(loginRequest) {
     if (Meteor.settings.debug) {
         console.log("RESULT :" + JSON.stringify(loginResult));
     }
-    if (loginResult && loginResult.profile && loginResult.profile.email) {
-        console.log("Profile: " + JSON.stringify(loginResult.profile.email));
+
+    if (loginResult && loginResult.profile && loginResult.profile.nameID) {
+        console.log("Profile: " + JSON.stringify(loginResult.profile.nameID));
+        var localProfileMatchAttribute;
+        var localFindStructure;
+        var nameIDFormat;
+        // Default nameIDFormat is emailAddress
+        if (!(Meteor.settings.saml[0].identifierFormat) || (Meteor.settings.saml[0].identifierFormat == "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress")) {
+          nameIDFormat = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress";
+        } else {
+          nameIDFormat = Meteor.settings.saml[0].identifierFormat;
+        }
+
+        if (nameIDFormat == "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" ) {
+            // If nameID Format is emailAdress, we should not force 'email' as localProfileMatchAttribute
+            localProfileMatchAttribute = "email";
+            localFindStructure = "emails.address";
+            profileOrEmail = "email";
+            profileOrEmailValue = loginResult.profile.nameID;
+        } else // any other nameID format
+            // Check if Meteor.settings.saml[0].localProfileMatchAttribute has value
+            // These values will be stored in profile substructure. They're NOT security relevant because profile isn't a safe place
+            if (Meteor.settings.saml[0].localProfileMatchAttribute){
+               profileOrEmail = "profile";
+               profileOrEmailValue = {
+                  [Meteor.settings.saml[0].localProfileMatchAttribute] : loginResult.profile.nameID
+               };
+               localFindStructure = 'profile.' + Meteor.settings.saml[0].localProfileMatchAttribute;
+        }
         var user = Meteor.users.findOne({
-            'emails.address': loginResult.profile.email
+            //profile[Meteor.settings.saml[0].localProfileMatchAttribute]: loginResult.profile.nameID
+            [localFindStructure]: loginResult.profile.nameID
         });
 
         if (!user) {
             if (Meteor.settings.saml[0].dynamicProfile) {
+                if (Meteor.settings.debug) {
+                    console.log("User not found. Will dynamically create one with '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' = " + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute])
+                }
                 Accounts.createUser({
-                    email: loginResult.profile.email,
+                    //email: loginResult.profile.email,
                     password: "",
                     username: loginResult.profile.nameID,
-                    profile: ""
+                    [profileOrEmail]:  profileOrEmailValue
+
+                    //[Meteor.settings.saml[0].localProfileMatchAttribute]: loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]
                 });
                 user = Meteor.users.findOne({
-                    "emails.address": loginResult.profile.email
+                    "username": loginResult.profile.nameID
                 });
                 if (Meteor.settings.debug) {
                     console.log("Created new user");
                 }
             } else {
-                throw new Error("Could not find an existing user with supplied email " + loginResult.profile.email);
+                throw new Error("Could not find an existing user with supplied attribute  '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' and value:" + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]);
             }
         }
 
@@ -142,7 +175,7 @@ Accounts.registerLoginHandler(function(loginRequest) {
         return result
 
     } else {
-        throw new Error("SAML Profile did not contain an email address");
+        throw new Error("SAML Assertion did not contain a proper SAML subject value");
     }
 });
 
@@ -273,6 +306,9 @@ middleware = function(req, res, next) {
                 break;
             case "validate":
                 _saml = new SAML(service);
+                if (Meteor.settings.debug) {
+                  console.log("Service: " + JSON.stringify(service));
+                };
                 Accounts.saml.RelayState = req.body.RelayState;
                 _saml.validateResponse(req.body.SAMLResponse, req.body.RelayState, function(err, profile, loggedOut) {
                     if (err)

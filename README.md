@@ -31,6 +31,9 @@ settings = {"saml":[{
      "privateKeyFile": "certs/mykey.pem",  // path is relative to $METEOR-PROJECT/private
      "publicCertFile": "certs/mycert.pem",  // eg $METEOR-PROJECT/private/certs/mycert.pem
      "dynamicProfile": true // set to true if we want to create a user in Meteor.users dynamically if SAML assertion is valid
+     "identifierFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified", // Defaults to urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+     "localProfileMatchAttribute": "telephoneNumber" // CAUTION: this will be mapped to profile.<localProfileMatchAttribute> attribute in Mongo if identifierFormat (see above) differs from urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+
   }]}
 
 Meteor.settings = settings;
