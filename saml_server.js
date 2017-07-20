@@ -186,6 +186,24 @@ Accounts.registerLoginHandler(function(loginRequest) {
             });
         }
 
+        var attributeNames = Meteor.settings.saml[0].attributesSAML;
+        var meteorProfile = {};
+        if (attributeNames) {
+          attributeNames.forEach(function(attribute) {
+            meteorProfile[attribute] = loginResult.profile[attribute];
+          });
+        }
+        if (Meteor.settings.debug) {
+            console.log("Profile Update for Meteor: " + JSON.stringify(meteorProfile));
+        }
+        Meteor.users.update({
+            _id: user._id
+        }, {
+            $set: {
+                'profile': meteorProfile
+            }
+        });
+
         //sending token along with the userId
         var result = {
             userId: user._id,

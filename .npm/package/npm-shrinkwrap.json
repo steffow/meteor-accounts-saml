@@ -220,22 +220,36 @@
     "xml-crypto": {
       "version": "0.9.0",
       "resolved": "https://registry.npmjs.org/xml-crypto/-/xml-crypto-0.9.0.tgz",
-      "from": "xml-crypto@0.9.0"
+      "from": "xml-crypto@0.9.0",
+      "dependencies": {
+        "xmldom": {
+          "version": "0.1.19",
+          "resolved": "https://registry.npmjs.org/xmldom/-/xmldom-0.1.19.tgz",
+          "from": "xmldom@0.1.19"
+        }
+      }
     },
     "xml2js": {
       "version": "0.4.17",
       "resolved": "https://registry.npmjs.org/xml2js/-/xml2js-0.4.17.tgz",
-      "from": "xml2js@0.4.17"
+      "from": "xml2js@0.4.17",
+      "dependencies": {
+        "xmlbuilder": {
+          "version": "4.2.1",
+          "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-4.2.1.tgz",
+          "from": "xmlbuilder@>=4.1.0 <5.0.0"
+        }
+      }
     },
     "xmlbuilder": {
-      "version": "4.2.1",
-      "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-4.2.1.tgz",
-      "from": "xmlbuilder@>=4.1.0 <5.0.0"
+      "version": "9.0.0",
+      "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-9.0.0.tgz",
+      "from": "xmlbuilder@9.0.0"
     },
     "xmldom": {
-      "version": "0.1.19",
-      "resolved": "https://registry.npmjs.org/xmldom/-/xmldom-0.1.19.tgz",
-      "from": "xmldom@0.1.19"
+      "version": "0.1.27",
+      "resolved": "https://registry.npmjs.org/xmldom/-/xmldom-0.1.27.tgz",
+      "from": "xmldom@0.1.27"
     },
     "xpath": {
       "version": "0.0.24",
