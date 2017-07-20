@@ -121,6 +121,26 @@ Accounts.registerLoginHandler(function(loginRequest) {
                 user = Meteor.users.findOne({
                     "username": loginResult.profile.nameID
                 });
+                // update user profile w attrs from SAML Attr Satement
+                //Meteor.user.update(user, )
+                if (Meteor.settings.debug) {
+                    console.log("Profile for attributes: " + JSON.stringify(loginResult.profile));
+                }
+                var attributeNames = Meteor.settings.saml[0].attributesSAML;
+                var meteorProfile = {};
+                if (attributeNames) {
+                  attributeNames.forEach(function(attribute) {
+                    meteorProfile[attribute] = loginResult.profile[attribute];
+                  });
+                }
+                if (Meteor.settings.debug) {
+                    console.log("Profile for Meteor: " + JSON.stringify(meteorProfile));
+                }
+                Meteor.users.update(user, {
+                    $set: {
+                        'profile': meteorProfile
+                    }
+                });
                 if (Meteor.settings.debug) {
                     console.log("Created new user");
                 }
