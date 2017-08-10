@@ -261,6 +261,10 @@ SAML.prototype.getElement = function(parentElement, elementName) {
 		return parentElement[`saml2p:${ elementName }`];
 	} else if (parentElement[`saml2:${ elementName }`]) {
 		return parentElement[`saml2:${ elementName }`];
+	} else if (parentElement[`ns0:${ elementName }`]) {
+		return parentElement[`ns0:${ elementName }`];
+	} else if (parentElement[`ns1:${ elementName }`]) {
+		return parentElement[`ns1:${ elementName }`];
 	}
 	return parentElement[elementName];
 };
