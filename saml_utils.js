@@ -52,7 +52,7 @@ SAML.prototype.initialize = function(options) {
 
 SAML.prototype.generateUniqueID = function() {
 	const chars = 'abcdef0123456789';
-	let uniqueID = '';
+	let uniqueID = 'id-';
 	for (let i = 0; i < 20; i++) {
 		uniqueID += chars.substr(Math.floor((Math.random() * 15)), 1);
 	}
