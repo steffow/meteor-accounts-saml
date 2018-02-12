@@ -108,7 +108,8 @@ Accounts.registerLoginHandler(function(loginRequest) {
         if (!user) {
             if (Meteor.settings.saml[0].dynamicProfile) {
                 if (Meteor.settings.debug) {
-                    console.log("User not found. Will dynamically create one with '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' = " + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute])
+                    console.log("User not found. Will dynamically create one with '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' = " + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]);
+                    console.log("Identity handle: " + profileOrEmail + " = " + JSON.stringify(profileOrEmailValue));
                 }
                 Accounts.createUser({
                     //email: loginResult.profile.email,
