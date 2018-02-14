@@ -100,6 +100,9 @@ Accounts.registerLoginHandler(function(loginRequest) {
                };
                localFindStructure = 'profile.' + Meteor.settings.saml[0].localProfileMatchAttribute;
         }
+        if (Meteor.settings.debug) {
+            console.log("Looking for user with " + localFindStructure + "=" + loginResult.profile.nameID);
+        }
         var user = Meteor.users.findOne({
             //profile[Meteor.settings.saml[0].localProfileMatchAttribute]: loginResult.profile.nameID
             [localFindStructure]: loginResult.profile.nameID
@@ -109,7 +112,7 @@ Accounts.registerLoginHandler(function(loginRequest) {
             if (Meteor.settings.saml[0].dynamicProfile) {
                 if (Meteor.settings.debug) {
                     console.log("User not found. Will dynamically create one with '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' = " + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]);
-                    console.log("Identity handle: " + profileOrEmail + " = " + JSON.stringify(profileOrEmailValue));
+                    console.log("Identity handle: " + profileOrEmail + " = " + JSON.stringify(profileOrEmailValue) + " || username = " + loginResult.profile.nameID);
                 }
                 Accounts.createUser({
                     //email: loginResult.profile.email,
@@ -119,6 +122,9 @@ Accounts.registerLoginHandler(function(loginRequest) {
 
                     //[Meteor.settings.saml[0].localProfileMatchAttribute]: loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]
                 });
+                if (Meteor.settings.debug) {
+                    console.log("Trying to find user");
+                }
                 user = Meteor.users.findOne({
                     "username": loginResult.profile.nameID
                 });
@@ -275,6 +281,9 @@ middleware = function(req, res, next) {
                 break;
             case "logout":
                 // This is where we receive SAML LogoutResponse
+                if (Meteor.settings.debug) {
+                    console.log("Handling call to 'logout' endpoint." + req.query.SAMLResponse);
+                }
                 _saml = new SAML(service);
                 _saml.validateLogoutResponse(req.query.SAMLResponse, function(err, result) {
                     if (!err) {
@@ -318,7 +327,9 @@ middleware = function(req, res, next) {
                         });
                         res.end();
                     } else {
-                        // TBD thinking of sth meaning full.
+                      if (Meteor.settings.debug) {
+                          console.log("Couldn't validate SAML Logout Response..");
+                      }
                     }
                 })
                 break;
