@@ -431,7 +431,16 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
                     }
                     if (attributes) {
                         for (let i = 0; i < attributes.length; i++) {
-                            const value = attributes[i].getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:assertion', 'AttributeValue')[0];
+                            const values = attributes[i].getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:assertion', 'AttributeValue');
+                            let value;
+                            if (values.length === 1) {
+                                value = values[0].textContent;
+                            } else {
+                                value = [];
+                                for (var attributeValue of values) {
+                                    value.push(attributeValue.textContent);
+                                }
+                            }
                             if (Meteor.settings.debug) {
                                 console.log("Name: " + attributes[i]);
                                 console.log(`Adding attrinute from SAML response to profile:` + attributes[i].getAttribute('Name') + " = " + value.textContent);
