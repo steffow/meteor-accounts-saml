@@ -1,7 +1,7 @@
 Package.describe({
     name:"steffo:meteor-accounts-saml",
     summary: "SAML Login (SP) for Meteor. Works with OpenAM, OpenIDP and provides Single Logout.",
-    version: "0.0.13",
+    version: "0.0.14",
     git: "https://github.com/steffow/meteor-accounts-saml.git"
 });
 
@@ -53,7 +53,8 @@ Npm.depends({
     "xpath.js": "1.0.7",
     "xmldom": "0.1.27",
     "connect": "3.6.0",
-    "querystring": "0.2.0"
+    "querystring": "0.2.0",
+    "arraybuffer-to-string": "1.0.1"
 //    "xml-encryption": "0.10.0"
 });
 
