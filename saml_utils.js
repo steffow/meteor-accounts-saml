@@ -52,7 +52,7 @@ SAML.prototype.initialize = function(options) {
 
 SAML.prototype.generateUniqueID = function() {
 	const chars = 'abcdef0123456789';
-	let uniqueID = '';
+	let uniqueID = 'id-';
 	for (let i = 0; i < 20; i++) {
 		uniqueID += chars.substr(Math.floor((Math.random() * 15)), 1);
 	}
@@ -485,24 +485,12 @@ SAML.prototype.generateServiceProviderMetadata = function(callbackUrl) {
 					}
 				}
 			},
-			'#list': [
-				// this should be the set that the xmlenc library supports
-				{
-					'EncryptionMethod': {
-						'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes256-cbc'
-					}
-				},
-				{
-					'EncryptionMethod': {
-						'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes128-cbc'
-					}
-				},
-				{
-					'EncryptionMethod': {
-						'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'
-					}
-				}
-			]
+					'EncryptionMethod': [
+						// this should be the set that the xmlenc library supports
+						{'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes256-cbc'},
+						{'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#aes128-cbc'},
+						{'@Algorithm': 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'}
+					]
 		};
 	}
 
