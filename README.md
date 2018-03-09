@@ -3,50 +3,56 @@ Meteor-accounts-saml
 
 SAML v2 login support for existing password based accounts
 
------
+Disclaimer
+------
 
-## Demo
-
-For OpenIDP, see the example app `example-openidp` and http://accounts-saml-example.meteor.com/ for a demo.
-
-For OpenAM, see the example app `openam-example`.
-
-## Important Notes
-
-* **This package is working but may have issues with various saml providers** - it has only been tested and verified with [OpenIDP](https://openidp.feide.no/) and [OpenAM](https://www.forgerock.org/openam).
+* **This package is working but may have issues with various saml providers** - it has only been tested and verified with [OpenIDP](https://openidp.feide.no/) and [OpenAM](https://www.forgerock.org/openam) and [WSO2](https://docs.wso2.com/display/IS541).
 * Most SAML IDPs don't allow SPs with a _localhost (127.0.0.1)_  address. Unless you run your own IDP (eg via your own OpenAM instance) you might exprience issues.
 * The accounts-ui loggin buttons will not include saml providers, this may be implemented as a future enhancement, see below for how to build a custom login button.
 
+
+Tables of Contents
+======
+
+* [Usage](#usage)
+  * [Setup SAML SP (Consumer)](#setup-saml-sp-consumer)
+  * [OpenAM](#openam-setup)
+  * [OpenIDP](#openidp-setup)
+* [Demo](#demo)
+* [Roadmap](#roadmap)
+* [Credits](#credits)
+
 ## Usage
 
-Put SAML settings in eg `server/lib/settings.js` like so:
+Add the following snippet to your settings.json file SAML:
+
+_Keep in mind you only need to set `provider`, `entryPoint`, `issuer`, `idpSLORedirectURL`, `dynamicProfile` to be able to communicate successfully, unless you made extra configurations like encrypting the assertions which then you'd need to add `privateKeyFile` and `publicCertFile` properties to decrypt them and so on. So only use what you need._
+
 
 ```
-settings = {"saml":[{
-    "provider":"openam",
-    "entryPoint":"https://openam.idp.io/openam/SSORedirect/metaAlias/zimt/idp",
-    "issuer": "https://sp.zimt.io/", //replace with url of your app
+"saml":[{
+    "provider": "openam", // The name of your identity server provider.
+    "entryPoint": "https://openam.idp.io/openam/SSORedirect/metaAlias/zimt/idp", // This is the URL that's used for communicating with the identity provider. It varies depending on your IDP, every IDP has its own unique version.
+    "issuer": "https://sp.zimt.io/", // A unique identifier for the IDP to recognize which application is trying to initiate requests. It has to be the same in your IDP's configurations.
     "cert":"MIICizCCAfQCCQCY8tKaMc0 LOTS OF FUNNY CHARS ==",
-    "idpSLORedirectURL": "http://openam.idp.io/openam/IDPSloRedirect/metaAlias/zimt/idp",
-     "privateKeyFile": "certs/mykey.pem",  // path is relative to $METEOR-PROJECT/private
+    "idpSLORedirectURL": "http://openam.idp.io/openam/IDPSloRedirect/metaAlias/zimt/idp", // The URL that the user is going to be redirected on a successful logout process.
+     "privateKeyFile": "certs/mykey.pem",  // Path is relative to $METEOR-PROJECT/private.
      "publicCertFile": "certs/mycert.pem",  // eg $METEOR-PROJECT/private/certs/mycert.pem
-     "dynamicProfile": true // set to true if we want to create a user in Meteor.users dynamically if SAML assertion is valid
+     "dynamicProfile": true // Set to true if we want to create a user in Meteor.users dynamically if SAML assertion is valid
      "identifierFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified", // Defaults to urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
      "localProfileMatchAttribute": "telephoneNumber" // CAUTION: this will be mapped to profile.<localProfileMatchAttribute> attribute in Mongo if identifierFormat (see above) differs from urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress,
-     "attributesSAML": [telephoneNumber, sn, givenName, mail], // attrs from SAML attr statement, which will be used for local Meteor profile creation. Currently no real attribute mapping. If required use mapping on IdP side.
+     "attributesSAML": [telephoneNumber, sn, givenName, mail], // Attrs from SAML attr statement, which will be used for local Meteor profile creation. Currently no real attribute mapping. If required use mapping on IdP side.
+  }]
 
-  }]}
-
-Meteor.settings = settings;
 ```
 
-in some template
+In some template
 
 ```
 <a href="#" class="saml-login" data-provider="openam">OpenAM</a>
 ```
 
-in helper function
+In helper function
 
 ```
   'click .saml-login' (event) {
@@ -60,14 +66,14 @@ in helper function
   }
 ```
 
-and if SingleLogout is needed
+And if SingleLogout is needed
 
 ```
-'click .saml-login': function(event, template){
+'click .saml-login' (event, template){
     event.preventDefault();
-    var provider = $(event.target).data('provider');
+    var provider = event.target.getAttribute('data-provider');
     Meteor.logoutWithSaml({
-	    provider:provider
+	    provider
 	}, function(error, result){
 		//handle errors and result
     });
@@ -78,8 +84,8 @@ and if SingleLogout is needed
 
 1. Create a Meteor project by `meteor create sp` and cd into it.
 2. Add `steffo:meteor-accounts-saml`
-3. Create `server/lib/settings.js` as described above. Since Meteor loads things in `server/lib` first, this ensures that your settings are respected even on Galaxy where you cannot use `meteor --settings`.
-4. Put your private key and your cert (not the IDP's one) into the "private" directory. Eg if your meteor project is at `/Users/steffo/sp` then place them in `/Users/steffo/sp/private`
+3. Add `settings.json` in your root directory. And start passing in the values required for your IDP.
+4. (Optional) Put your private key and your cert (not the IDP's one) into the "private" directory. Eg if your meteor project is at `/Users/steffo/sp` then place them in `/Users/steffo/sp/private`
 5. Check if you can receive SP metadata eg via `curl http://localhost:3000/_saml/metadata/openam`. Output should look like:
 
 ```
@@ -119,10 +125,16 @@ The following schema fragment defines the `<EncryptedAssertion>` element:
 ```
 In case the SAML response contains an `<EncryptedAssertion>` element and the configuration key `privateKey` is set, the assertion get's decrypted and handled like it would be an unencrypted one.
 
-## OpenIDP setup
+## OpenIDP Setup
 - EntryID = http://accounts-saml-example.meteor.com
 - Name of Service = meteor-accounts-saml-example
 - AssertionConsumerService endpoint = http://accounts-saml-example.meteor.com/_saml/validate/openidp/
+
+## Demo
+
+For OpenIDP, see the example app `example-openidp`.
+
+For OpenAM, see the example app `openam-example`.
 
 ## Roadmap
 * Introduction of IDP types (eg openam, auth0 etc) to support implementaion specific workarounds.
