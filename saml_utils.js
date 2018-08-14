@@ -376,8 +376,8 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
                 var assertion = response.getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:assertion', 'Assertion')[0];
                 const encAssertion = response.getElementsByTagNameNS('urn:oasis:names:tc:SAML:2.0:assertion', 'EncryptedAssertion')[0];
 
-                var xmlenc = Npm.require('xml-encryption');
-                var options = { key: this.options.privateKey };
+               var xmlenc = Npm.require('xml-encryption');
+               var options = { key: this.options.privateKey};
 
                 if (typeof encAssertion !== 'undefined') {
                     xmlenc.decrypt(encAssertion.getElementsByTagNameNS('*', 'EncryptedData')[0], options, function(err, result) {
