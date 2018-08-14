@@ -384,6 +384,7 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
                         assertion = new xmldom.DOMParser().parseFromString(result, 'text/xml');
                     });
                 }
+
                 if (!assertion) {
                     return callback(new Error('Missing SAML assertion'), null, false);
                 }

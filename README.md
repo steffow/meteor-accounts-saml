@@ -103,14 +103,21 @@ and if SingleLogout is needed
 </EntityDescriptor>
   ```
 
-##OpenAM Setup
+## OpenAM Setup
 
 1. I prefer using OpenAM realms. Set up a realm using a name that matches the one in the entry point URL of the `settings.json` file: `https://openam.idp.io/openam/SSORedirect/metaAlias/<YOURREALM>/idp`; we used `zimt` above.
 2. Save the SP metadata (obtained in Step 5 above) in a file `sp-metadata.xml`.
 3. Logon OpenSSO console as `amadmin` and select _Common Tasks > Register Remote Service Provider_
 4. Select the corresponding real and upload the metadata (alternatively, point OpenAM to the SP's metadata URL eg `http://sp.meteor.com/_saml/metadata/openam`). If all goes well the new SP shows up under _Federation > Entity Providers_
 
+## Encryption
+The `<EncryptedAssertion>` element represents an assertion in encrypted fashion, as defined by the XML Encryption Syntax and Processing specification [XMLEnc](http://www.w3.org/TR/2002/REC-xmlenc-core-20021210/). Encrypted assertions are intended as a confidentiality protection mechanism when the plain-text value passes through an intermediary. 
 
+The following schema fragment defines the `<EncryptedAssertion>` element: 
+```
+<element name="EncryptedAssertion" type="saml:EncryptedElementType"/>
+```
+In case the SAML response contains an `<EncryptedAssertion>` element and the configuration key `privateKey` is set, the assertion get's decrypted and handled like it would be an unencrypted one.
 
 ## OpenIDP setup
 - EntryID = http://accounts-saml-example.meteor.com
