@@ -143,11 +143,13 @@ Accounts.registerLoginHandler(function(loginRequest) {
                 if (Meteor.settings.debug) {
                     console.log("Profile for Meteor: " + JSON.stringify(meteorProfile));
                 }
-                Meteor.users.update(user, {
-                    $set: {
-                        'profile': meteorProfile
-                    }
-                });
+                for (var property in meteorProfile) {
+                    Meteor.users.update(user._id, {
+                      $set: {
+                        [property]: meteorProfile[property]
+                      }
+                    }); 
+                }
                 if (Meteor.settings.debug) {
                     console.log("Created new user");
                 }
@@ -203,13 +205,13 @@ Accounts.registerLoginHandler(function(loginRequest) {
         if (Meteor.settings.debug) {
             console.log("Profile Update for Meteor: " + JSON.stringify(meteorProfile));
         }
-        Meteor.users.update({
-            _id: user._id
-        }, {
-            $set: {
-                'profile': meteorProfile
-            }
-        });
+        for (var property in meteorProfile) {
+            Meteor.users.update(user._id, {
+              $set: {
+                [property]: meteorProfile[property]
+              }
+            }); 
+        }
 
         //sending token along with the userId
         var result = {
