@@ -2,11 +2,12 @@ Meteor-accounts-saml
 ==================
 
 SAML v2 login support for existing password based accounts
+#### This is a continuation of `steffow:meteor-accounts-saml` as it've been stale for a while
 
 Disclaimer
 ------
 
-* **This package is working but may have issues with various saml providers** - it has only been tested and verified with [OpenIDP](https://openidp.feide.no/) and [OpenAM](https://www.forgerock.org/openam) and [WSO2](https://docs.wso2.com/display/IS541).
+* **This package is working but may have issues with various saml providers** - it has only been tested and verified with [OpenIDP](https://openidp.feide.no/), [OpenAM](https://www.forgerock.org/openam) and [WSO2](https://docs.wso2.com/display/IS541).
 * Most SAML IDPs don't allow SPs with a _localhost (127.0.0.1)_  address. Unless you run your own IDP (eg via your own OpenAM instance) you might exprience issues.
 * The accounts-ui loggin buttons will not include saml providers, this may be implemented as a future enhancement, see below for how to build a custom login button.
 
