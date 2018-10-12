@@ -2,7 +2,7 @@ Meteor-accounts-saml
 ==================
 
 SAML v2 login support for existing password based accounts
-#### This is a continuation of `steffow:meteor-accounts-saml` as it've been stale for a while
+#### This is a continuation of `steffow:meteor-accounts-saml` as it has been stale for a while
 
 Disclaimer
 ------
