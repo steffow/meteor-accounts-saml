@@ -7,6 +7,19 @@ var Fiber = Npm.require('fibers');
 var bodyParser = Npm.require('body-parser')
 RoutePolicy.declare('/_saml/', 'network');
 
+var updateProfile = function(profile, newValues) {
+    var keys = Object.keys(newValues);
+    var result = profile;
+
+    keys.forEach(function(key,index) {
+        if (newValues[key]) {
+            result[key] = newValues[key];
+        }
+        
+    })
+    return result;
+}
+
 Meteor.methods({
     samlLogout: function(provider) {
         // Make sure the user is logged in before initiate SAML SLO
@@ -110,18 +123,22 @@ Accounts.registerLoginHandler(function(loginRequest) {
 
         if (!user) {
             if (Meteor.settings.saml[0].dynamicProfile) {
+                var newUser = {
+                    password: "",
+                    username: loginResult.profile.nameID,
+                    [profileOrEmail]:  profileOrEmailValue
+                }
                 if (Meteor.settings.debug) {
                     console.log("User not found. Will dynamically create one with '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' = " + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]);
                     console.log("Identity handle: " + profileOrEmail + " = " + JSON.stringify(profileOrEmailValue) + " || username = " + loginResult.profile.nameID);
+                    console.log("Create user: " + JSON.stringify(newUser));
                 }
                 Accounts.createUser({
                     //email: loginResult.profile.email,
                     password: "",
                     username: loginResult.profile.nameID,
-                    [profileOrEmail]:  profileOrEmailValue
-
-                    //[Meteor.settings.saml[0].localProfileMatchAttribute]: loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]
-                });
+                    [profileOrEmail]:  profileOrEmailValue});
+                console.log("#################");
                 if (Meteor.settings.debug) {
                     console.log("Trying to find user");
                 }
@@ -132,6 +149,7 @@ Accounts.registerLoginHandler(function(loginRequest) {
                 //Meteor.user.update(user, )
                 if (Meteor.settings.debug) {
                     console.log("Profile for attributes: " + JSON.stringify(loginResult.profile));
+                    console.log("Created User: " + JSON.stringify(user));
                 }
                 var attributeNames = Meteor.settings.saml[0].attributesSAML;
                 var meteorProfile = {};
@@ -145,7 +163,7 @@ Accounts.registerLoginHandler(function(loginRequest) {
                 }
                 Meteor.users.update(user, {
                     $set: {
-                        'profile': meteorProfile
+                        "profile": updateProfile(user.profile, meteorProfile)
                     }
                 });
                 if (Meteor.settings.debug) {
@@ -154,6 +172,31 @@ Accounts.registerLoginHandler(function(loginRequest) {
             } else {
                 throw new Error("Could not find an existing user with supplied attribute  '" + Meteor.settings.saml[0].localProfileMatchAttribute + "' and value:" + loginResult.profile[Meteor.settings.saml[0].localProfileMatchAttribute]);
             }
+        } else {
+            if (Meteor.settings.debug) {
+                console.log("Meteor User Found. Will try to update profile with values from SAML Response.");
+            }
+            var attributeNames = Meteor.settings.saml[0].attributesSAML;
+            var meteorProfile = {};
+            if (attributeNames) {
+              attributeNames.forEach(function(attribute) {
+                meteorProfile[attribute] = loginResult.profile[attribute];
+              });
+            }
+            if (Meteor.settings.debug) {
+                console.log("Profile Update for Meteor: " + JSON.stringify(meteorProfile));
+            }
+            if (Meteor.settings.debug) {
+                var newProfile = updateProfile(user.profile, meteorProfile);
+                console.log("New Profile: " + JSON.stringify(newProfile));
+            }
+            Meteor.users.update({
+                _id: user._id
+            }, {
+                $set: {
+                    'profile': updateProfile(user.profile, meteorProfile)
+                }
+            });
         }
 
 
@@ -192,24 +235,6 @@ Accounts.registerLoginHandler(function(loginRequest) {
                 }
             });
         }
-
-        var attributeNames = Meteor.settings.saml[0].attributesSAML;
-        var meteorProfile = {};
-        if (attributeNames) {
-          attributeNames.forEach(function(attribute) {
-            meteorProfile[attribute] = loginResult.profile[attribute];
-          });
-        }
-        if (Meteor.settings.debug) {
-            console.log("Profile Update for Meteor: " + JSON.stringify(meteorProfile));
-        }
-        Meteor.users.update({
-            _id: user._id
-        }, {
-            $set: {
-                'profile': meteorProfile
-            }
-        });
 
         //sending token along with the userId
         var result = {
