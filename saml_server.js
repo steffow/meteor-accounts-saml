@@ -42,6 +42,8 @@ Meteor.methods({
             "services.saml": 1
         });
         var nameID = user.services.saml.nameID;
+        var nameIDFormat = user.services.saml.nameIDFormat;
+        var nameIDNameQualifier = user.services.saml.nameIDNameQualifier;
         var sessionIndex = nameID = user.services.saml.idpSession;
         if (Meteor.settings.debug) {
             console.log("NameID for user " + Meteor.userId() + " found: " + JSON.stringify(nameID));
@@ -51,6 +53,8 @@ Meteor.methods({
 
         var request = _saml.generateLogoutRequest({
             nameID: nameID,
+            nameIDFormat: nameIDFormat,
+            nameIDNameQualifier: nameIDNameQualifier,
             sessionIndex: sessionIndex
         });
 

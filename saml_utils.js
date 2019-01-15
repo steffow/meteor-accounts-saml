@@ -107,7 +107,9 @@ SAML.prototype.generateAuthorizeRequest = function(req) {
 
 SAML.prototype.generateLogoutRequest = function(options) {
     // options should be of the form
-    // nameId: <nameId as submitted during SAML SSO>
+    // nameID: <nameId as submitted during SAML SSO>
+    // nameIDFormat: <nameId Format as submitted during SAML SSO>
+    // nameIDNameQualifier: <nameId NameQualifier as submitted during SAML SSO>
     // sessionIndex: sessionIndex
     // --- NO SAMLsettings: <Meteor.setting.saml  entry for the provider you want to SLO from
 
@@ -128,11 +130,17 @@ SAML.prototype.generateLogoutRequest = function(options) {
         `Destination="${ this.options.idpSLORedirectURL }" ` +
         '>' +
         `<saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${ this.options.issuer }</saml:Issuer>` +
-        '<saml:NameID xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ' +
-        'NameQualifier="http://id.init8.net:8080/openam" ' +
-        `SPNameQualifier="${ this.options.issuer }" ` +
-        `Format="${ this.options.identifierFormat }">${
-		options.nameID }</saml:NameID>` +
+        '<saml:NameID xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ';
+    if (options.nameIDNameQualifier) {
+        request += `NameQualifier="${ options.nameIDNameQualifier }" `;
+    }
+    if (options.nameIDFormat) {
+        request += `Format="${ options.nameIDFormat }" `;
+    }
+    else {
+        request += `Format="${ this.options.identifierFormat }" `;
+    }
+    request += `>${ options.nameID }</saml:NameID>` +
         `<samlp:SessionIndex xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">${ options.sessionIndex }</samlp:SessionIndex>` +
         '</samlp:LogoutRequest>';
     if (Meteor.settings.debug) {
