@@ -417,6 +417,10 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
                         if (nameID.hasAttribute('Format')) {
                             profile.nameIDFormat = nameID.getAttribute('Format');
                         }
+
+                        if (nameID.hasAttribute('NameQualifier')) {
+                            profile.nameIDNameQualifier = nameID.getAttribute('NameQualifier');
+                        }
                     }
                 }
 

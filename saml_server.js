@@ -213,7 +213,9 @@ Accounts.registerLoginHandler(function(loginRequest) {
             provider: Accounts.saml.RelayState,
             idp: loginResult.profile.issuer,
             idpSession: loginResult.profile.sessionIndex,
-            nameID: loginResult.profile.nameID
+            nameID: loginResult.profile.nameID,
+            nameIDFormat: loginResult.profile.nameIDFormat,
+            nameIDNameQualifier: loginResult.profile.nameIDNameQualifier
         };
 
         Meteor.users.update({
