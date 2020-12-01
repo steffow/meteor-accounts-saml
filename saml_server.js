@@ -9,7 +9,7 @@ RoutePolicy.declare('/_saml/', 'network');
 
 var updateProfile = function(profile, newValues) {
     var keys = Object.keys(newValues);
-    var result = profile;
+    var result = profile || {};
 
     keys.forEach(function(key,index) {
         if (newValues[key]) {
