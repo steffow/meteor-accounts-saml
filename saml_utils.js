@@ -467,8 +467,9 @@ SAML.prototype.validateResponse = function(samlResponse, relayState, callback) {
                             if (values.length === 1) {
                                 value = values[0].textContent;
                             } else {
+                                array = Array.from(values);
                                 value = [];
-                                for (var attributeValue of values) {
+                                for (var attributeValue of array) {
                                     value.push(attributeValue.textContent);
                                 }
                             }
